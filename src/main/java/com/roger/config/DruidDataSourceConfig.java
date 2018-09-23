@@ -21,6 +21,7 @@ public class DruidDataSourceConfig {
     private String password;
     @Value("${datasource.druid.initialSize}")
     private int initialSize;
+    @Value("${datasource.druid.minIdle}")
     private int minIdle;
     @Value("${datasource.druid.maxActive}")
     private int maxActive;
