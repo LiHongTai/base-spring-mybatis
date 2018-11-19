@@ -1,10 +1,9 @@
 package com.roger.config;
 
 import com.roger.constant.SystemConstant;
-import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.logging.stdout.StdOutImpl;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.mapper.MapperScannerConfigurer;
-import org.omg.SendingContext.RunTime;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -24,6 +23,11 @@ public class MyBatisConfig {
         SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
 
         sqlSessionFactoryBean.setDataSource(dataSource);
+
+        //打印SQL语句到控制台
+        org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
+        configuration.setLogImpl(StdOutImpl.class);
+        sqlSessionFactoryBean.setConfiguration(configuration);
 
         //把相关的Mapper配置文件加入导入到SqlSessionFactory中
         ResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();

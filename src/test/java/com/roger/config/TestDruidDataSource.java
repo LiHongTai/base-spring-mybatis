@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class TestDruidDataSource extends SpringBaseTestSuit {
 
-    @Autowired
+    @Autowired(required = false)
     private DruidDataSource dataSource;
 
     @Test

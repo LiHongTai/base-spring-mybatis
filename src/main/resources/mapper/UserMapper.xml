@@ -4,11 +4,11 @@
 <mapper namespace="com.roger.mapper.UserMapper">
 
     <select id="getUserList" resultType="User">
-        SELECT id,username,age,phone,'desc' FROM user
+        SELECT id,user_name userName,age,phone FROM user
     </select>
 
     <insert id="insertUser" parameterType="User">
-        insert into user (username,age,phone,`desc`)values(#{userName},#{age},#{phone},#{desc})
+        insert into user (user_name,age,phone)values(#{userName},#{age},#{phone})
     </insert>
 
 </mapper>

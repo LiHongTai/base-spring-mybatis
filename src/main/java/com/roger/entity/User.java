@@ -1,12 +1,15 @@
 package com.roger.entity;
 
+import java.util.Date;
+
 public class User {
 
     private int id;
     private String userName;
     private int age;
     private String phone;
-    private String desc;
+    private Date createdTime;
+    private Date updatedTime;
 
     public int getId() {
         return id;
@@ -40,12 +43,20 @@ public class User {
         this.phone = phone;
     }
 
-    public String getDesc() {
-        return desc;
+    public Date getCreatedTime() {
+        return createdTime;
     }
 
-    public void setDesc(String desc) {
-        this.desc = desc;
+    public void setCreatedTime(Date createdTime) {
+        this.createdTime = createdTime;
+    }
+
+    public Date getUpdatedTime() {
+        return updatedTime;
+    }
+
+    public void setUpdatedTime(Date updatedTime) {
+        this.updatedTime = updatedTime;
     }
 
     @Override
@@ -55,7 +66,8 @@ public class User {
                 ", userName='" + userName + '\'' +
                 ", age=" + age +
                 ", phone='" + phone + '\'' +
-                ", desc='" + desc + '\'' +
+                ", createdTime=" + createdTime +
+                ", updatedTime=" + updatedTime +
                 '}';
     }
 }

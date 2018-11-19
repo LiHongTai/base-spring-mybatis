@@ -10,7 +10,7 @@ import java.util.List;
 
 public class TestUserMapper extends SpringBaseTestSuit {
 
-    @Autowired
+    @Autowired(required = false)
     private UserMapper userMapper;
 
     @Test
@@ -23,9 +23,8 @@ public class TestUserMapper extends SpringBaseTestSuit {
     public void testInsertUser(){
         User user  = new User();
         user.setAge(19);
-        user.setPhone("16422455");
+        user.setPhone("15618494678");
         user.setUserName("Mary");
-        user.setDesc("Pretty");
         userMapper.insertUser(user);
     }
 }

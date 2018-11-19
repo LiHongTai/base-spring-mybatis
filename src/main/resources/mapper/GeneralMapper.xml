@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.roger.mapper.GeneralMapper">
+
+
+    <!-- 根据主键查询数据 -->
+    <select id="selectByPrimaryKey" parameterType="map" resultType="hashMap">
+          select
+              <foreach item="columnName" index="index" collection="columnNames" separator=",">
+                  ${columnName}
+              </foreach>
+          from ${tableName}
+          where ${primaryKey} = #{primaryValue}
+    </select>
+    <!-- 根据动态条件查询数据 -->
+    <select id="selectAdvanced" parameterType="map" resultType="hashmap">
+        select
+        <foreach item="columnName" index="index" collection="columnNames" separator=",">
+            ${columnName}
+        </foreach>
+        from ${tableName}
+        <if test="conditionExp != null">
+            <where>
+                ${conditionExp}
+            </where>
+        </if>
+        <if test="orderExp != null">
+            order by ${orderExp}
+        </if>
+        <if test="page != null">
+            limit #{page.startRowNo},#{page.pageSize}
+        </if>
+    </select>
+
+    <insert id="insert" parameterType="map">
+        insert into ${tableName}
+        <foreach collection="sqlColumns" item="sqlColumn" open="(" separator="," close=")">
+            ${sqlColumn.columnName}
+        </foreach>
+        values
+        <foreach collection="sqlColumns" item="sqlColumn" open="(" separator="," close=")">
+            <if test="sqlColumn.jdbcType == null">
+                #{sqlColumn.columnValue}
+            </if>
+            <if test="sqlColumn.jdbcType != null">
+                #{sqlColumn.columnValue,jdbcType=${sqlColumn.jdbcType}}
+            </if>
+        </foreach>
+    </insert>
+
+</mapper>

@@ -8,16 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class TestUserServiceImpl extends SpringBaseTestSuit {
 
-    @Autowired
+    @Autowired(required = false)
     private UserService userService;
 
     @Test
     public void testInsertUser(){
         User user  = new User();
-        user.setAge(19);
-        user.setPhone("16422455");
-        user.setUserName("Mary");
-        user.setDesc("Pretty");
+        user.setAge(14);
+        user.setPhone("15945678956");
+        user.setUserName("Lily");
         int count = userService.insertUser(user);
         Assert.assertTrue(count >= 0);
     }
