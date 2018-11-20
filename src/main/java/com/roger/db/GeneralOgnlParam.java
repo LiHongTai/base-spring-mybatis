@@ -3,7 +3,7 @@ package com.roger.db;
 import java.util.List;
 import java.util.Map;
 
-public class GeneralQueryParam {
+public class GeneralOgnlParam {
     /**
      * 查询列
      */

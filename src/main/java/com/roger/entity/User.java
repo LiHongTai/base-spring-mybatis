@@ -1,21 +1,22 @@
 package com.roger.entity;
 
+import javax.persistence.Transient;
 import java.util.Date;
 
 public class User {
 
-    private int id;
+    private Long id;
     private String userName;
-    private int age;
+    private Integer age;
     private String phone;
     private Date createdTime;
     private Date updatedTime;
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -27,11 +28,11 @@ public class User {
         this.userName = userName;
     }
 
-    public int getAge() {
+    public Integer getAge() {
         return age;
     }
 
-    public void setAge(int age) {
+    public void setAge(Integer age) {
         this.age = age;
     }
 

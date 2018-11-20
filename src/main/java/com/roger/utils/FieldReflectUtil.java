@@ -54,7 +54,6 @@ public class FieldReflectUtil {
             if (field.get(target) == null) {
                 return null;
             }
-
             if (field.getType().isEnum()) {
                 return EnumFieldReflectUtil.getEnumFieldOrdinal(target, field);
             }

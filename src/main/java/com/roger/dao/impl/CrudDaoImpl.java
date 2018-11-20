@@ -1,11 +1,10 @@
 package com.roger.dao.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.roger.constant.QueryParamConstant;
+import com.roger.constant.OgnlParamConstant;
 import com.roger.dao.CrudDao;
-import com.roger.db.GeneralQueryParam;
+import com.roger.db.GeneralOgnlParam;
 import com.roger.db.SqlColumn;
 import com.roger.db.SqlColumnFactory;
 import com.roger.mapper.GeneralMapper;
@@ -25,27 +24,31 @@ import java.util.Map;
 public class CrudDaoImpl implements CrudDao {
 
     @Autowired
-    private GeneralMapper generalMapper;
+    protected GeneralMapper generalMapper;
 
     @Override
-    public Map<String, Object> selectByPrimaryKey(Map<String, Object> paramMap) {
+    public <T> T selectByPrimaryKey(Class<T> clazz, Map<String, Object> paramMap) {
+        String tableName = PersistentUtil.getTableName(clazz);
+        paramMap.put(OgnlParamConstant.TABLE_NAME, tableName);
+
         Map<String, Object> resultMap = generalMapper.selectByPrimaryKey(paramMap);
         if (CollectionUtils.isEmpty(resultMap)) {
             return null;
         }
-        return resultMap;
+        JSONObject resultJSONObject = JSON.parseObject(JSON.toJSONString(resultMap));
+        return JSONObject.toJavaObject(resultJSONObject, clazz);
     }
 
     @Override
-    public <T> List<T> selectAdvanced(Class<T> clazz, GeneralQueryParam generalQueryParam) {
+    public <T> List<T> selectAdvanced(Class<T> clazz, GeneralOgnlParam generalOgnlParam) {
         List<T> resultList = new ArrayList<>();
         List<String> columnNameList = GeneralMapperReflectUtil.getAllColumnNames(clazz);
-        generalQueryParam.setQueryCoulmn(columnNameList);
+        generalOgnlParam.setQueryCoulmn(columnNameList);
 
-        List<Map<String, Object>> resultMapList = this.selectAdvancedByColumn(clazz, generalQueryParam);
-        for(Map<String,Object> resultMap : resultMapList){
-            T target = GeneralMapperReflectUtil.parseToJavaBean(resultMap,clazz);
-            if(target != null) {
+        List<Map<String, Object>> resultMapList = this.selectAdvancedByColumn(clazz, generalOgnlParam);
+        for (Map<String, Object> resultMap : resultMapList) {
+            T target = GeneralMapperReflectUtil.parseToJavaBean(resultMap, clazz);
+            if (target != null) {
                 resultList.add(target);
             }
         }
@@ -53,22 +56,22 @@ public class CrudDaoImpl implements CrudDao {
         return resultList;
     }
 
-    private <T> List<Map<String, Object>> selectAdvancedByColumn(Class<T> clazz, GeneralQueryParam generalQueryParam) {
+    private <T> List<Map<String, Object>> selectAdvancedByColumn(Class<T> clazz, GeneralOgnlParam generalOgnlParam) {
 
         String tableName = PersistentUtil.getTableName(clazz);
         Map<String, Object> paramMap = new HashMap<>();
-        paramMap.put(QueryParamConstant.TABLE_NAME, tableName);
-        paramMap.put(QueryParamConstant.QUERY_COLUMN_NAME_LIST, generalQueryParam.getQueryCoulmn());
-        paramMap.put(QueryParamConstant.WHERE_CONDITION_EXP,generalQueryParam.getConditionExp());
-        paramMap.put(QueryParamConstant.WHERE_CONDITION_PARAM,generalQueryParam.getConditionParam());
-        paramMap.put(QueryParamConstant.ORDER_BY_EXP,generalQueryParam.getOrderExp());
+        paramMap.put(OgnlParamConstant.TABLE_NAME, tableName);
+        paramMap.put(OgnlParamConstant.DML_COLUMN_NAME_LIST, generalOgnlParam.getQueryCoulmn());
+        paramMap.put(OgnlParamConstant.WHERE_CONDITION_EXP, generalOgnlParam.getConditionExp());
+        paramMap.put(OgnlParamConstant.WHERE_CONDITION_PARAM, generalOgnlParam.getConditionParam());
+        paramMap.put(OgnlParamConstant.ORDER_BY_EXP, generalOgnlParam.getOrderExp());
 
-        if(generalQueryParam.isEnablePage()){
-            Map<String,Object> pageMap = new HashMap<>();
-            int startRowNo = (generalQueryParam.getPageNo() -1) * generalQueryParam.getPageSize();
-            pageMap.put(QueryParamConstant.START_ROW_NO,startRowNo);
-            pageMap.put(QueryParamConstant.PAGE_SIZE,generalQueryParam.getPageSize());
-            paramMap.put(QueryParamConstant.PAGE,pageMap);
+        if (generalOgnlParam.isEnablePage()) {
+            Map<String, Object> pageMap = new HashMap<>();
+            int startRowNo = (generalOgnlParam.getPageNo() - 1) * generalOgnlParam.getPageSize();
+            pageMap.put(OgnlParamConstant.START_ROW_NO, startRowNo);
+            pageMap.put(OgnlParamConstant.PAGE_SIZE, generalOgnlParam.getPageSize());
+            paramMap.put(OgnlParamConstant.PAGE, pageMap);
         }
 
         return generalMapper.selectAdvanced(paramMap);
@@ -76,21 +79,93 @@ public class CrudDaoImpl implements CrudDao {
 
     @Override
     public <T> int insert(T target) {
-        if(target == null){
+        if (target == null) {
             return 0;
         }
         String tableName = PersistentUtil.getTableName(target.getClass());
         Map<String, Object> paramMap = new HashMap<>();
         List<SqlColumn> sqlColumnList = new ArrayList<>();
-        paramMap.put(QueryParamConstant.TABLE_NAME,tableName);
-        paramMap.put(QueryParamConstant.INSERT_SQL_COLUMN_LIST,sqlColumnList);
+        paramMap.put(OgnlParamConstant.TABLE_NAME, tableName);
+        paramMap.put(OgnlParamConstant.SQL_COLUMN_LIST, sqlColumnList);
+        constrSqlColumnList(sqlColumnList, target);
 
-        List<Field> fieldList = PersistentUtil.getPersistentFields(target.getClass());
-        for(Field field : fieldList){
-            SqlColumn sqlColumn = SqlColumnFactory.createSqlColumn(target,field);
-            sqlColumnList.add(sqlColumn);
+        return this.insert(paramMap);
+    }
+
+    @Override
+    public int insert(Map<String, Object> paramMap) {
+        return generalMapper.insert(paramMap);
+    }
+
+    @Override
+    public <T> int batchInsert(List<T> targetList) {
+        if (CollectionUtils.isEmpty(targetList)) {
+            return 0;
+        }
+        T target = targetList.get(0);
+        String tableName = PersistentUtil.getTableName(target.getClass());
+        Map<String, Object> paramMap = new HashMap<>();
+        //插入的表名
+        paramMap.put(OgnlParamConstant.TABLE_NAME, tableName);
+        List<String> columnNameList = GeneralMapperReflectUtil.getAllColumnNames(target.getClass());
+        //插入的字段
+        paramMap.put(OgnlParamConstant.DML_COLUMN_NAME_LIST, columnNameList);
+        List<List<SqlColumn>> dataList = new ArrayList<>();
+        //插入的数据
+        paramMap.put(OgnlParamConstant.BATCH_DATA_LIST, dataList);
+
+        for (T t : targetList) {
+            List<SqlColumn> sqlColumnList = new ArrayList<>();
+            dataList.add(sqlColumnList);
+            constrSqlColumnList(sqlColumnList, t);
         }
 
-        return generalMapper.insert(paramMap);
+        return generalMapper.batchInsert(paramMap);
+    }
+
+    private <T> void constrSqlColumnList(List<SqlColumn> sqlColumnList, T target) {
+        if (sqlColumnList == null) {
+            sqlColumnList = new ArrayList<>();
+        }
+        List<Field> fieldList = PersistentUtil.getPersistentFields(target.getClass());
+        for (Field field : fieldList) {
+            SqlColumn sqlColumn = SqlColumnFactory.createSqlColumn(target, field);
+            sqlColumnList.add(sqlColumn);
+        }
+    }
+
+    @Override
+    public <T> int update(T target, GeneralOgnlParam generalOgnlParam) {
+        if (target == null) {
+            return 0;
+        }
+        String tableName = PersistentUtil.getTableName(target.getClass());
+        Map<String, Object> paramMap = new HashMap<>();
+        paramMap.put(OgnlParamConstant.TABLE_NAME, tableName);
+        paramMap.put(OgnlParamConstant.WHERE_CONDITION_EXP, generalOgnlParam.getConditionExp());
+        paramMap.put(OgnlParamConstant.WHERE_CONDITION_PARAM, generalOgnlParam.getConditionParam());
+
+        List<SqlColumn> sqlColumnList = new ArrayList<>();
+        paramMap.put(OgnlParamConstant.SQL_COLUMN_LIST, sqlColumnList);
+        constrSqlColumnList(sqlColumnList, target);
+
+        return generalMapper.update(paramMap);
+    }
+
+    @Override
+    public <T> int deleteByPrimaryKey(Class<T> clazz, Map<String, Object> paramMap) {
+        String tableName = PersistentUtil.getTableName(clazz);
+        paramMap.put(OgnlParamConstant.TABLE_NAME, tableName);
+        return generalMapper.deleteByPrimaryKey(paramMap);
+    }
+
+    @Override
+    public <T> int deleteAdvanced(Class<T> clazz, GeneralOgnlParam generalOgnlParam) {
+        String tableName = PersistentUtil.getTableName(clazz);
+        Map<String,Object> paramMap = new HashMap<>();
+        paramMap.put(OgnlParamConstant.TABLE_NAME, tableName);
+        paramMap.put(OgnlParamConstant.WHERE_CONDITION_EXP,generalOgnlParam.getConditionExp());
+        paramMap.put(OgnlParamConstant.WHERE_CONDITION_PARAM,generalOgnlParam.getConditionParam());
+        return generalMapper.deleteAdvanced(paramMap);
     }
 }
